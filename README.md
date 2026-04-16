@@ -70,8 +70,41 @@ g++ cache_sim.cpp -o cache_sim
 
 ./cache_sim 4 2 input.txt
 
-##  Known Limitations
-- Uses a simple replacement policy 
-- Only supports single-word blocks
-- Does not classify miss types
 
+### 1. Multi-Word Blocks
+In a multi-word block cache, each cache line stores multiple consecutive memory addresses instead of a single word. This would require:
+- Adding a block size parameter
+- Modifying index and tag calculations to include block offset bits
+- Checking if an address falls within a block range
+
+This improves spatial locality by allowing nearby memory accesses to result in cache hits.
+
+---
+
+### 2. Multi-Level Cache (L1 and L2)
+A multi-level cache system includes multiple cache layers:
+- L1 (small, fast cache)
+- L2 (larger, slower cache)
+
+On a memory access:
+- Check L1 first
+- If MISS → check L2
+- If MISS in both → fetch from main memory
+
+This reduces average memory access time and improves performance.
+
+---
+
+### 3. Miss Classification
+Cache misses can be classified into three types:
+
+- **Compulsory Miss**: First-time access to a memory block (cold start)
+- **Capacity Miss**: Cache is too small to hold all needed data
+- **Conflict Miss**: Multiple addresses map to the same cache set
+
+To implement this, the simulator would need to:
+- Track previously accessed addresses
+- Simulate a fully associative cache for comparison
+- Analyze replacement behavior
+
+---
