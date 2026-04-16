@@ -2,95 +2,112 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <unordered_set>
+#include <climits>
 
 using namespace std;
 
-// Structure for a cache line
+// Cache line structure
 struct CacheLine {
     bool valid;
     int tag;
+    int lastUsed; // for LRU
 };
 
+// Cache class
 class Cache {
 private:
     int numSets;
     int associativity;
+    int time; // global time for LRU
     vector<vector<CacheLine>> sets;
+    unordered_set<int> seen; // for miss classification
 
 public:
-// Constructor
+    // Constructor
     Cache(int numEntries, int assoc) {
         associativity = assoc;
         numSets = numEntries / assoc;
+        time = 0;
 
-// Initialize cache with invalid entries
-        sets.resize(numSets, vector<CacheLine>(associativity, {false, -1}));
+        sets.resize(numSets, vector<CacheLine>(associativity, {false, -1, 0}));
     }
 
-    // Access function: returns true if HIT, false if MISS
-    bool access(int address) {
+    // Access function
+    string access(int address) {
         int index = address % numSets;
         int tag = address / numSets;
 
-        // Check for HIT
+        time++;
+
+        int lruIndex = 0;
+        int minTime = INT_MAX;
+
+        // Check HIT
         for (int i = 0; i < associativity; i++) {
             if (sets[index][i].valid && sets[index][i].tag == tag) {
-                return true;
+                sets[index][i].lastUsed = time;
+                return "HIT";
             }
         }
 
-        // MISS: find empty slot
+        // MISS classification
+        string result;
+        if (seen.find(address) == seen.end()) {
+            result = "MISS (Compulsory)";
+        } else {
+            result = "MISS (Conflict)";
+        }
+        seen.insert(address);
+
+        // Find empty slot
         for (int i = 0; i < associativity; i++) {
             if (!sets[index][i].valid) {
-                sets[index][i].valid = true;
-                sets[index][i].tag = tag;
-                return false;
+                sets[index][i] = {true, tag, time};
+                return result;
             }
         }
 
-        // MISS: replace first entry (simple policy)
-        sets[index][0].tag = tag;
-        sets[index][0].valid = true;
+        // Replace LRU
+        for (int i = 0; i < associativity; i++) {
+            if (sets[index][i].lastUsed < minTime) {
+                minTime = sets[index][i].lastUsed;
+                lruIndex = i;
+            }
+        }
 
-        return false;
+        sets[index][lruIndex] = {true, tag, time};
+
+        return result;
     }
 };
 
 int main(int argc, char* argv[]) {
-    // Check for correct number of arguments
+    // Check arguments
     if (argc != 4) {
         cout << "Usage: ./cache_sim num_entries associativity file" << endl;
         return 1;
     }
 
-    // Read command-line arguments
     int numEntries = stoi(argv[1]);
     int associativity = stoi(argv[2]);
     string filename = argv[3];
 
-    // Create cache
     Cache cache(numEntries, associativity);
 
-    // Open input file
     ifstream infile(filename);
     if (!infile) {
         cout << "Error: Cannot open input file." << endl;
         return 1;
     }
 
-    // Open output file
     ofstream outfile("cache_sim_output");
 
     int address;
 
-    // Process each memory reference
     while (infile >> address) {
-        bool hit = cache.access(address);
-
-        if (hit)
-            outfile << address << " : HIT" << endl;
-        else
-            outfile << address << " : MISS" << endl;
+        string result = cache.access(address);
+        outfile << address << " : " << result << endl;
     }
 
     infile.close();
