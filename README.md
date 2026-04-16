@@ -1,6 +1,6 @@
 # Cache Simulator (CS3339 - Homework 3)
 
-## Team Members
+## Team Member
 - Dipesh Kumar Mahato
 
 ##  Description
@@ -13,7 +13,7 @@ This project implements a cache simulator in C++. The simulator models cache beh
 - Number of entries is a power of two
 - Associativity divides the number of entries evenly
  
-##Cache Design
+## Cache Design
 - Number of sets:
 
 num_sets = num_entries / associativity
@@ -73,5 +73,5 @@ g++ cache_sim.cpp -o cache_sim
 ##  Known Limitations
 - Uses a simple replacement policy 
 - Only supports single-word blocks
-- Does not classify misspellings
+- Does not classify miss types
 
